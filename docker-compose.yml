@@ -1,0 +1,57 @@
+services:
+  app:
+    build: .
+    command: uvicorn goldguard.api.app:create_app --factory --host 0.0.0.0 --port 8000
+    environment:
+      GOLDGUARD_MODE: paper
+      GOLDGUARD_DB_DSN: postgresql://goldguard:goldguard@postgres:5432/goldguard
+      GOLDGUARD_REDIS_URL: redis://redis:6379/0
+      GOLDGUARD_API_KEY: ${GOLDGUARD_API_KEY:?set a control-plane API key}
+      GOLDGUARD_READONLY_KEY: ${GOLDGUARD_READONLY_KEY:?set a read-only API key}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  watchdog:
+    build: .
+    command: python -m goldguard.watchdog.watchdog
+    environment:
+      GOLDGUARD_MODE: paper
+      GOLDGUARD_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: goldguard
+      POSTGRES_PASSWORD: goldguard
+      POSTGRES_DB: goldguard
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goldguard"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
