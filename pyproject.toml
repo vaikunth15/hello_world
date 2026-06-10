@@ -1,0 +1,43 @@
+[project]
+name = "goldguard"
+version = "0.1.0"
+description = "Automated gold futures trading system. Survival > profit."
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7",
+    "pydantic-settings>=2.2",
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+    "structlog>=24.1",
+]
+
+[project.optional-dependencies]
+live = [
+    "ib_insync>=0.9.86",
+    "psycopg[binary]>=3.1",
+    "redis>=5.0",
+    "apscheduler>=3.10",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "httpx>=0.27",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["goldguard*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["error::DeprecationWarning:goldguard.*"]
+
+[tool.coverage.run]
+branch = true
+source = ["goldguard"]
