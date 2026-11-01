@@ -275,7 +275,7 @@
     }
     if (view !== "map") p.set("view", view);
     const s = p.toString();
-    history.replaceState(null, "", s ? "#" + s : location.pathname + location.search);
+    try { history.replaceState(null, "", s ? "#" + s : location.pathname + location.search); } catch { /* sandboxed host */ }
   }
   function readHash() {
     const p = new URLSearchParams(location.hash.slice(1));
@@ -641,7 +641,20 @@
     };
     const csv = [cols.join(","), ...FILTERED.map(l => cols.map(c => esc(l[c])).join(","))].join("\n");
     const a = h("a", { href: URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" })), download: `coimbatore-listings-${new Date().toISOString().slice(0, 10)}.csv` });
+    // Embedded/sandboxed hosts block downloads: copy to the clipboard instead.
+    if (window.self !== window.top && navigator.clipboard) {
+      navigator.clipboard.writeText(csv).then(
+        () => flash(`Copied ${num(FILTERED.length)} rows as CSV`),
+        () => flash("Export is blocked here"));
+      return;
+    }
     document.body.append(a); a.click(); a.remove();
+  }
+
+  function flash(msg) {
+    const b = $("export"), old = "Export CSV";
+    b.textContent = msg;
+    setTimeout(() => { b.textContent = old; }, 2500);
   }
 
   /* ------------------------------------------------------------ view switching */
@@ -699,12 +712,13 @@
     (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
   const themeLabel = () => { $("theme").textContent = isDarkTheme() ? "Light mode" : "Dark mode"; };
   function wireTheme() {
-    const saved = localStorage.getItem("cpi-theme");
+    let saved = null;
+    try { saved = localStorage.getItem("cpi-theme"); } catch { /* storage unavailable */ }
     if (saved) document.documentElement.dataset.theme = saved;
     themeLabel();
     $("theme").addEventListener("click", () => {
       document.documentElement.dataset.theme = isDarkTheme() ? "light" : "dark";
-      localStorage.setItem("cpi-theme", document.documentElement.dataset.theme);
+      try { localStorage.setItem("cpi-theme", document.documentElement.dataset.theme); } catch { /* ignore */ }
       themeLabel();
       if (map) { setTiles(); }
       renderView();
