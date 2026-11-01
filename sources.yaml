@@ -1,0 +1,149 @@
+# Where listings come from. Add, fix or disable sources here - no code changes needed.
+#
+# kind: portal  - listing website; reads embedded JSON-LD / front-end JSON (optionally CSS selectors)
+# kind: csv     - CSV file or published Google Sheet (broker feeds, builder price lists, partner exports)
+# kind: rera    - Tamil Nadu RERA registered-project tables
+#
+# Portal URLs are best-known patterns. Each weekly run reports per-source status
+# (ok / blocked / failed / suspicious) on the dashboard's "Sources" panel - fix
+# URLs or add `css:` selectors here when a source shows 0 records.
+#
+# NOTE: most commercial portals' Terms of Use restrict automated collection.
+# robots.txt is honoured, but check each site's terms (or ask for a data feed)
+# before enabling a portal. Set `enabled: false` to turn one off.
+
+settings:
+  delay_seconds: 5          # per host, plus random jitter
+  respect_robots: true
+  geocode: true             # OSM Nominatim fallback for unknown localities (cached)
+  max_geocode_lookups: 300  # per run
+
+sources:
+
+  # ---------------------------------------------------------------- government
+  tnrera:
+    kind: rera
+    name: TN RERA (registered projects)
+    base_url: https://rera.tn.gov.in
+    enabled: true
+    pages:   # VERIFY on first run - TN RERA publishes one table page per type & year
+      - {url: "https://rera.tn.gov.in/cms/reg_projects_tamilnadu/Building/2026.php", project_type: Building}
+      - {url: "https://rera.tn.gov.in/cms/reg_projects_tamilnadu/Building/2025.php", project_type: Building}
+      - {url: "https://rera.tn.gov.in/cms/reg_projects_tamilnadu/Building/2024.php", project_type: Building}
+      - {url: "https://rera.tn.gov.in/cms/reg_projects_tamilnadu/Layout/2026.php", project_type: Layout}
+      - {url: "https://rera.tn.gov.in/cms/reg_projects_tamilnadu/Layout/2025.php", project_type: Layout}
+      - {url: "https://rera.tn.gov.in/cms/reg_projects_tamilnadu/Layout/2024.php", project_type: Layout}
+
+  # ---------------------------------------------------------------- your own feeds
+  manual:
+    kind: csv
+    name: Manual / broker feed
+    path: data/feeds/manual_listings.csv     # or a published Google Sheet CSV URL
+    enabled: true
+    # columns:            # map your CSV headers -> loose keys if they differ
+    #   "Asking Price": price
+    #   "Area (cents)": plot_area
+
+  # ---------------------------------------------------------------- portals
+  magicbricks:
+    kind: portal
+    name: MagicBricks
+    base_url: https://www.magicbricks.com
+    enabled: true
+    max_pages: 40
+    searches:
+      - label: sale
+        transaction: sale
+        url: https://www.magicbricks.com/property-for-sale-in-coimbatore-pppfs
+        page_url: https://www.magicbricks.com/property-for-sale-in-coimbatore-pppfs/page-{page}
+      - label: rent
+        transaction: rent
+        url: https://www.magicbricks.com/property-for-rent-in-coimbatore-pppfr
+        page_url: https://www.magicbricks.com/property-for-rent-in-coimbatore-pppfr/page-{page}
+      - label: plots
+        transaction: sale
+        property_type: plot
+        url: https://www.magicbricks.com/residential-plots-land-for-sale-in-coimbatore-pppfs
+        page_url: https://www.magicbricks.com/residential-plots-land-for-sale-in-coimbatore-pppfs/page-{page}
+      - label: commercial
+        transaction: sale
+        url: https://www.magicbricks.com/commercial-property-for-sale-in-coimbatore-pppfs
+        page_url: https://www.magicbricks.com/commercial-property-for-sale-in-coimbatore-pppfs/page-{page}
+
+  99acres:
+    kind: portal
+    name: 99acres
+    base_url: https://www.99acres.com
+    enabled: true
+    max_pages: 40
+    searches:
+      - label: sale
+        transaction: sale
+        url: https://www.99acres.com/property-in-coimbatore-ffid
+        page_url: https://www.99acres.com/property-in-coimbatore-ffid-page-{page}
+      - label: rent
+        transaction: rent
+        url: https://www.99acres.com/rent-property-in-coimbatore-ffid
+        page_url: https://www.99acres.com/rent-property-in-coimbatore-ffid-page-{page}
+      - label: plots
+        transaction: sale
+        property_type: plot
+        url: https://www.99acres.com/residential-land-in-coimbatore-ffid
+        page_url: https://www.99acres.com/residential-land-in-coimbatore-ffid-page-{page}
+      - label: commercial
+        transaction: sale
+        url: https://www.99acres.com/commercial-property-in-coimbatore-ffid
+        page_url: https://www.99acres.com/commercial-property-in-coimbatore-ffid-page-{page}
+
+  housing:
+    kind: portal
+    name: Housing.com
+    base_url: https://housing.com
+    enabled: true
+    max_pages: 30
+    searches:
+      - label: sale
+        transaction: sale
+        url: https://housing.com/in/buy/coimbatore/coimbatore
+        page_url: https://housing.com/in/buy/coimbatore/coimbatore?page={page}
+      - label: rent
+        transaction: rent
+        url: https://housing.com/in/rent/coimbatore/coimbatore
+        page_url: https://housing.com/in/rent/coimbatore/coimbatore?page={page}
+      - label: plots
+        transaction: sale
+        property_type: plot
+        url: https://housing.com/in/buy/coimbatore/plots-in-coimbatore
+        page_url: https://housing.com/in/buy/coimbatore/plots-in-coimbatore?page={page}
+
+  squareyards:
+    kind: portal
+    name: Square Yards
+    base_url: https://www.squareyards.com
+    enabled: true
+    max_pages: 25
+    searches:
+      - label: sale
+        transaction: sale
+        url: https://www.squareyards.com/sale/property-for-sale-in-coimbatore
+        page_url: https://www.squareyards.com/sale/property-for-sale-in-coimbatore?page={page}
+      - label: rent
+        transaction: rent
+        url: https://www.squareyards.com/rent/property-for-rent-in-coimbatore
+        page_url: https://www.squareyards.com/rent/property-for-rent-in-coimbatore?page={page}
+
+  makaan:
+    kind: portal
+    name: Makaan
+    base_url: https://www.makaan.com
+    enabled: true
+    max_pages: 25
+    searches:
+      - label: sale
+        transaction: sale
+        url: https://www.makaan.com/coimbatore-residential-property/buy-property-in-coimbatore-city
+        page_url: https://www.makaan.com/coimbatore-residential-property/buy-property-in-coimbatore-city?page={page}
+      - label: rent
+        transaction: rent
+        url: https://www.makaan.com/coimbatore-residential-property/rent-property-in-coimbatore-city
+        page_url: https://www.makaan.com/coimbatore-residential-property/rent-property-in-coimbatore-city?page={page}

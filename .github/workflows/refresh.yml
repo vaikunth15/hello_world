@@ -1,0 +1,51 @@
+name: Weekly listings refresh
+
+on:
+  schedule:
+    - cron: "30 0 * * 1"   # every Monday 06:00 IST (00:30 UTC)
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Run only these source ids (space separated, blank = all)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: listings-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Test parsers
+        run: python -m pytest -q
+
+      - name: Collect, normalise, expire, export
+        env:
+          ONLY: ${{ github.event.inputs.only }}
+        run: |
+          if [ -n "$ONLY" ]; then python -m collector run --only $ONLY; else python -m collector run; fi
+
+      - name: Publish data
+        run: |
+          git config user.name  "listings-bot"
+          git config user.email "listings-bot@users.noreply.github.com"
+          git add data/realestate.sqlite docs/data
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Weekly listings refresh $(date -u +%Y-%m-%d)"
+          git push

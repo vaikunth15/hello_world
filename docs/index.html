@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coimbatore Property Index</title>
+<meta name="description" content="Every active real-estate listing in Coimbatore in one place, refreshed weekly.">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app viz-root">
+  <header class="top">
+    <div class="brand">
+      <h1>Coimbatore Property Index</h1>
+      <p class="sub" id="refreshed">Loading…</p>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button role="tab" data-view="map" aria-selected="true">Map</button>
+      <button role="tab" data-view="list">Listings</button>
+      <button role="tab" data-view="insights">Insights</button>
+      <button role="tab" data-view="projects">RERA projects</button>
+      <button role="tab" data-view="sources">Sources</button>
+    </nav>
+    <button class="btn" id="theme" type="button">Dark mode</button>
+  </header>
+
+  <section class="filters" id="filters" aria-label="Filters">
+    <input type="search" id="f-q" placeholder="Search locality, project, builder…" aria-label="Search">
+    <div class="seg" role="radiogroup" aria-label="Deal" id="f-deal">
+      <button type="button" data-v="" aria-pressed="true">All</button>
+      <button type="button" data-v="sale">Buy</button>
+      <button type="button" data-v="rent">Rent / lease</button>
+    </div>
+    <details class="dd" id="dd-type"><summary>Property type</summary><div class="dd-panel" id="f-type"></div></details>
+    <details class="dd" id="dd-loc"><summary>Locality</summary>
+      <div class="dd-panel wide"><input type="search" id="f-loc-q" placeholder="Find locality…" aria-label="Find locality"><div id="f-loc" class="dd-scroll"></div></div>
+    </details>
+    <div class="chips" id="f-bhk" aria-label="Bedrooms">
+      <button type="button" data-v="1">1</button><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="4">4</button><button type="button" data-v="5">5+</button><span class="chip-suffix">BHK</span>
+    </div>
+    <details class="dd" id="dd-price"><summary>Budget</summary>
+      <div class="dd-panel">
+        <label>Min <select id="f-pmin"></select></label>
+        <label>Max <select id="f-pmax"></select></label>
+        <label>Area min (sq ft) <input type="number" id="f-amin" min="0" step="100" inputmode="numeric"></label>
+        <label>Area max (sq ft) <input type="number" id="f-amax" min="0" step="100" inputmode="numeric"></label>
+      </div>
+    </details>
+    <details class="dd" id="dd-more"><summary>More</summary><div class="dd-panel wide" id="f-more"></div></details>
+    <button type="button" class="link-btn" id="f-reset">Reset</button>
+    <span class="spacer"></span>
+    <span class="count" id="count" aria-live="polite"></span>
+    <button type="button" class="btn" id="export">Export CSV</button>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+  <main>
+    <section class="view" id="view-map" aria-label="Map">
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-tools">
+          <label><input type="checkbox" id="m-heat"> Density heatmap</label>
+          <label><input type="checkbox" id="m-projects" checked> RERA projects</label>
+        </div>
+        <div class="map-legend" aria-label="Map legend">
+          <div><span class="key dot" style="--c:var(--series-1)"></span>For sale</div>
+          <div><span class="key dot" style="--c:var(--series-2)"></span>For rent / lease</div>
+          <div><span class="key sq" style="--c:var(--series-3)"></span>RERA project</div>
+          <div class="muted"><span class="key dot faint" style="--c:var(--text-secondary)"></span>Pale = locality-level position</div>
+        </div>
+      </div>
+      <aside class="inview">
+        <div class="inview-head"><strong id="inview-count">0</strong> <span>in view</span>
+          <select id="inview-sort" aria-label="Sort listings in view">
+            <option value="new">Newest</option><option value="price-asc">Price ↑</option>
+            <option value="price-desc">Price ↓</option><option value="ppsf-asc">₹/sq ft ↑</option>
+          </select>
+        </div>
+        <ol id="inview-list" class="cards"></ol>
+      </aside>
+    </section>
+
+    <section class="view" id="view-list" hidden aria-label="Listings table">
+      <div class="table-wrap"><table class="data" id="tbl"><thead></thead><tbody></tbody></table></div>
+      <div class="pager" id="pager"></div>
+    </section>
+
+    <section class="view" id="view-insights" hidden aria-label="Insights">
+      <div class="grid" id="charts"></div>
+    </section>
+
+    <section class="view" id="view-projects" hidden aria-label="RERA projects">
+      <p class="note">Projects registered with Tamil Nadu RERA in Coimbatore district. Registration is the buyer's first check on a new project: a listing quoting a RERA number can be verified here.</p>
+      <div class="table-wrap"><table class="data" id="ptbl"><thead></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="view" id="view-sources" hidden aria-label="Sources">
+      <p class="note">Each weekly run visits every source. A listing stays <em>active</em> while its source keeps showing it; when a source run looks broken (blocked, or far fewer results than last week) its listings are kept rather than expired.</p>
+      <div class="table-wrap"><table class="data" id="stbl"><thead></thead><tbody></tbody></table></div>
+    </section>
+
+    <div class="empty" id="empty" hidden></div>
+  </main>
+
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Listing details">
+    <button class="icon-btn close" id="drawer-close" type="button" aria-label="Close details">×</button>
+    <div id="drawer-body"></div>
+  </aside>
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet.markercluster.js"></script>
+<script src="vendor/leaflet/leaflet-heat.js"></script>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
